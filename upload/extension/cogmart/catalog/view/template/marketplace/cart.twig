@@ -8,35 +8,84 @@
       <h1>{{ heading_title }}</h1>
       
       {% if carts %}
-        <div class="table-responsive">
-          <table class="table table-bordered">
-            <thead>
-              <tr>
-                <th>{{ column_shop }}</th>
-                <th class="text-end">{{ column_action }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for cart in carts %}
-                <tr>
-                  <td>
-                    <strong>{{ cart.shop_name }}</strong><br/>
-                    <small class="text-muted">{{ cart.shop_domain }}</small><br/>
-                    <a href="{{ cart.shop_href }}" class="btn btn-sm btn-outline-primary mt-2"><i class="fa-solid fa-store"></i> View Shop</a>
-                  </td>
-                  <td class="text-end">
-                    {% if cart.checkout_url %}
-                      <a href="{{ cart.checkout_url }}" class="btn btn-success mb-2" target="_blank"><i class="fa-solid fa-shopping-cart"></i> {{ button_checkout }}</a><br/>
-                    {% endif %}
-                    <a href="{{ cart.remove }}" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> {{ button_remove }}</a>
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="alert alert-info">
+          <i class="fa-solid fa-info-circle"></i> {{ text_cart_info }}
+        </div>
+        
+        {% for cart in carts %}
+          <div class="card mb-4 shop-cart" data-shop-id="{{ cart.marketplace_cart_id }}" data-shop-domain="{{ cart.shop_domain }}" data-cart-id="{{ cart.cart_id }}">
+            <div class="card-header bg-primary text-white">
+              <div class="row align-items-center">
+                <div class="col-md-8">
+                  <h5 class="mb-0">
+                    <i class="fa-solid fa-store"></i> {{ cart.shop_name }}
+                  </h5>
+                  <small>{{ cart.shop_domain }}</small>
+                </div>
+                <div class="col-md-4 text-end">
+                  <a href="{{ cart.shop_href }}" class="btn btn-sm btn-light">
+                    <i class="fa-solid fa-arrow-left"></i> {{ button_continue_shopping }}
+                  </a>
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="cart-items" id="cart-items-{{ cart.marketplace_cart_id }}">
+                <div class="text-center py-3">
+                  <i class="fa-solid fa-spinner fa-spin"></i> {{ text_loading }}
+                </div>
+              </div>
+              
+              <div class="cart-total mt-3" id="cart-total-{{ cart.marketplace_cart_id }}" style="display: none;">
+                <div class="row">
+                  <div class="col-md-8">
+                    <h5>{{ text_total }}</h5>
+                  </div>
+                  <div class="col-md-4 text-end">
+                    <h5 class="total-amount"></h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="row">
+                <div class="col-md-6">
+                  {% if cart.checkout_url %}
+                    <a href="{{ cart.checkout_url }}" class="btn btn-success w-100" target="_blank">
+                      <i class="fa-solid fa-shopping-cart"></i> {{ button_checkout }}
+                    </a>
+                  {% else %}
+                    <button class="btn btn-success w-100 create-checkout-btn" data-cart-id="{{ cart.marketplace_cart_id }}">
+                      <i class="fa-solid fa-shopping-cart"></i> {{ button_checkout }}
+                    </button>
+                  {% endif %}
+                </div>
+                <div class="col-md-6">
+                  <a href="{{ cart.remove }}" class="btn btn-danger w-100" onclick="return confirm('{{ text_confirm_remove }}');">
+                    <i class="fa-solid fa-trash"></i> {{ button_remove }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+        
+        <div class="row mt-4">
+          <div class="col-md-12">
+            <a href="{{ continue }}" class="btn btn-outline-primary">
+              <i class="fa-solid fa-arrow-left"></i> {{ button_shopping }}
+            </a>
+          </div>
         </div>
       {% else %}
-        <p>{{ text_empty }}</p>
+        <div class="alert alert-info">
+          <i class="fa-solid fa-shopping-cart"></i> {{ text_empty }}
+        </div>
+        <div class="text-center mt-4">
+          <a href="{{ continue }}" class="btn btn-primary">
+            <i class="fa-solid fa-store"></i> {{ button_browse_shops }}
+          </a>
+        </div>
       {% endif %}
       
       {{ content_bottom }}
@@ -44,4 +93,51 @@
     {{ column_right }}
   </div>
 </div>
+
+<!-- Include Storefront API JavaScript -->
+<script src="catalog/view/extension/cogmart/marketplace/javascript/storefront-api.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    // Load cart contents for each shop
+    $('.shop-cart').each(function() {
+        var $cartContainer = $(this);
+        var shopDomain = $cartContainer.data('shop-domain');
+        var cartId = $cartContainer.data('cart-id');
+        var shopId = $cartContainer.data('shop-id');
+        var $itemsContainer = $('#cart-items-' + shopId);
+        var $totalContainer = $('#cart-total-' + shopId);
+        
+        // In a full implementation, you would:
+        // 1. Store the storefront access token per shop
+        // 2. Fetch cart data using CogMartStorefront API
+        // 3. Display cart line items with images, prices, quantities
+        // 4. Allow quantity updates and item removal
+        
+        // For now, show a placeholder message
+        if (cartId) {
+            $itemsContainer.html(`
+                <div class="alert alert-info">
+                    <i class="fa-solid fa-info-circle"></i> 
+                    Cart ID: <code>${cartId}</code><br>
+                    <small>Cart contents are managed on the shop's storefront.</small>
+                </div>
+            `);
+        } else {
+            $itemsContainer.html(`
+                <div class="alert alert-warning">
+                    <i class="fa-solid fa-exclamation-triangle"></i> 
+                    No cart ID available for this shop.
+                </div>
+            `);
+        }
+    });
+    
+    // Handle create checkout button
+    $('.create-checkout-btn').on('click', function() {
+        var cartId = $(this).data('cart-id');
+        alert('Checkout functionality requires integration with shop\'s Storefront API.\n\nCart ID: ' + cartId);
+    });
+});
+</script>
 {{ footer }}
