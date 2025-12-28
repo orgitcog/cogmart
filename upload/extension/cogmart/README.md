@@ -336,14 +336,14 @@ extension/cogmart/
     │   ├── shop.php                      # Shop language strings
     │   ├── cart.php                      # Cart language strings
     │   └── search.php                    # Search language strings
-    └── view/
-        ├── template/marketplace/
-        │   ├── shop_list.twig            # Shop listing page
-        │   ├── shop_info.twig            # Individual shop page with products
-        │   ├── cart.twig                 # Multi-shop cart page
-        │   └── search.twig               # Global search page
-        └── javascript/
-            └── storefront-api.js         # Shopify Storefront API client
+    └── view/template/marketplace/
+        ├── shop_list.twig                # Shop listing page
+        ├── shop_info.twig                # Individual shop page with products
+        ├── cart.twig                     # Multi-shop cart page
+        └── search.twig                   # Global search page
+
+upload/catalog/view/javascript/
+└── cogmart-storefront-api.js             # Shopify Storefront API client (installed separately)
 ```
 
 ## Architecture
