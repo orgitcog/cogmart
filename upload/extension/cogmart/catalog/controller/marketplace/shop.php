@@ -187,8 +187,8 @@ class Shop extends \Opencart\System\Engine\Controller {
 			$data['header'] = $this->load->controller('common/header');
 
 			$this->response->setOutput($this->load->view('extension/cogmart/marketplace/shop_info', $data));
-		
-		return null;
+
+			return null;
 		} else {
 			return new \Opencart\System\Engine\Action('error/not_found');
 		}
