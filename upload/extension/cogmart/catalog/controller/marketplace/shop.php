@@ -93,13 +93,31 @@ class Shop extends \Opencart\System\Engine\Controller {
 		$data['countries'] = $this->model_extension_cogmart_marketplace_shop->getCountries();
 
 		// Pagination
-		$pagination = new \Opencart\System\Library\Pagination();
-		$pagination->total = $shop_total;
-		$pagination->page = $page;
-		$pagination->limit = $limit;
-		$pagination->url = $this->url->link('extension/cogmart/marketplace/shop', 'language=' . $this->config->get('config_language') . '&page={page}');
+		$url = '';
 
-		$data['pagination'] = $pagination->render();
+		if (isset($this->request->get['country'])) {
+			$url .= '&country=' . urlencode($this->request->get['country']);
+		}
+
+		if (isset($this->request->get['search'])) {
+			$url .= '&search=' . urlencode($this->request->get['search']);
+		}
+
+		if (isset($this->request->get['sort'])) {
+			$url .= '&sort=' . $this->request->get['sort'];
+		}
+
+		if (isset($this->request->get['order'])) {
+			$url .= '&order=' . $this->request->get['order'];
+		}
+
+		$data['pagination'] = $this->load->controller('common/pagination', [
+			'total' => $shop_total,
+			'page'  => $page,
+			'limit' => $limit,
+			'url'   => $this->url->link('extension/cogmart/marketplace/shop', 'language=' . $this->config->get('config_language') . $url . '&page={page}')
+		]);
+
 		$data['results'] = sprintf($this->language->get('text_pagination'), ($shop_total) ? (($page - 1) * $limit) + 1 : 0, ((($page - 1) * $limit) > ($shop_total - $limit)) ? $shop_total : ((($page - 1) * $limit) + $limit), $shop_total, ceil($shop_total / $limit));
 
 		$data['filter_country'] = $filter_country;
@@ -120,9 +138,9 @@ class Shop extends \Opencart\System\Engine\Controller {
 	/**
 	 * Info - View single shop
 	 *
-	 * @return void
+	 * @return \Opencart\System\Engine\Action|null
 	 */
-	public function info(): void {
+	public function info(): ?\Opencart\System\Engine\Action {
 		$this->load->language('extension/cogmart/marketplace/shop');
 
 		$this->load->model('extension/cogmart/marketplace/shop');
@@ -169,6 +187,8 @@ class Shop extends \Opencart\System\Engine\Controller {
 			$data['header'] = $this->load->controller('common/header');
 
 			$this->response->setOutput($this->load->view('extension/cogmart/marketplace/shop_info', $data));
+		
+		return null;
 		} else {
 			return new \Opencart\System\Engine\Action('error/not_found');
 		}
