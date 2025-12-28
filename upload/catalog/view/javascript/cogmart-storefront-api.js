@@ -4,7 +4,7 @@
  * This module provides integration with Shopify's Storefront API
  * to fetch and display products from marketplace participating shops.
  * 
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 (function() {
@@ -15,6 +15,20 @@
      */
     window.CogMartStorefront = {
         /**
+         * Escape a string for use in GraphQL queries
+         * 
+         * @param {string} str - String to escape
+         * @returns {string} - Escaped string
+         */
+        escapeGraphQL: function(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            // Escape quotes and backslashes for GraphQL
+            return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        },
+
+        /**
          * Fetch products from a shop's Storefront API
          * 
          * @param {string} shopDomain - The shop's myshopify.com domain
@@ -24,9 +38,9 @@
          */
         fetchProducts: function(shopDomain, storefrontAccessToken, options) {
             options = options || {};
-            const first = options.first || 20;
-            const query = options.query || '';
-            const sortKey = options.sortKey || 'TITLE';
+            const first = parseInt(options.first, 10) || 20;
+            const query = this.escapeGraphQL(options.query || '');
+            const sortKey = ['TITLE', 'PRICE', 'CREATED_AT', 'BEST_SELLING'].includes(options.sortKey) ? options.sortKey : 'TITLE';
             
             const graphqlQuery = `{
                 products(first: ${first}, query: "${query}", sortKey: ${sortKey}) {
@@ -130,8 +144,10 @@
          * @returns {Promise} - Promise resolving to product data
          */
         fetchProduct: function(shopDomain, storefrontAccessToken, handle) {
+            const escapedHandle = this.escapeGraphQL(handle);
+            
             const graphqlQuery = `{
-                productByHandle(handle: "${handle}") {
+                productByHandle(handle: "${escapedHandle}") {
                     id
                     title
                     handle
