@@ -1,0 +1,110 @@
+{{ header }}
+<div id="product-category" class="container">
+  <div class="row">
+    {{ column_left }}
+    <div id="content" class="col">
+      {{ content_top }}
+      <h1>{{ heading_title }}</h1>
+      
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <div class="input-group">
+            <input type="text" name="search" value="{{ filter_name }}" placeholder="{{ text_search }}" class="form-control" id="input-search"/>
+            <button type="button" class="btn btn-primary" id="button-search"><i class="fa-solid fa-magnifying-glass"></i></button>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select name="country" class="form-select" id="input-country">
+            <option value="">{{ text_all_countries }}</option>
+            {% for country in countries %}
+              <option value="{{ country }}"{% if country == filter_country %} selected{% endif %}>{{ country }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select name="sort" class="form-select" id="input-sort">
+            <option value="name"{% if sort == 'name' %} selected{% endif %}>{{ text_sort_name_asc }}</option>
+            <option value="name-desc"{% if sort == 'name' and order == 'DESC' %} selected{% endif %}>{{ text_sort_name_desc }}</option>
+          </select>
+        </div>
+      </div>
+
+      {% if shops %}
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4">
+          {% for shop in shops %}
+            <div class="col mb-3">
+              <div class="card h-100">
+                <div class="card-body">
+                  <h5 class="card-title">{{ shop.name }}</h5>
+                  <p class="card-text">
+                    <small class="text-muted"><i class="fa-solid fa-globe"></i> {{ shop.domain }}</small><br/>
+                    {% if shop.country %}
+                      <small class="text-muted"><i class="fa-solid fa-location-dot"></i> {{ shop.country }}</small>
+                    {% endif %}
+                  </p>
+                  <a href="{{ shop.href }}" class="btn btn-primary">{{ button_view }}</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="row">
+          <div class="col-sm-6 text-start">{{ pagination }}</div>
+          <div class="col-sm-6 text-end">{{ results }}</div>
+        </div>
+      {% else %}
+        <p>{{ text_no_results }}</p>
+      {% endif %}
+      
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+<script type="text/javascript">
+$('#button-search').on('click', function() {
+    var url = 'index.php?route=extension/cogmart/marketplace/shop&language={{ config_language }}';
+    
+    var search = $('#input-search').val();
+    if (search) {
+        url += '&search=' + encodeURIComponent(search);
+    }
+    
+    var country = $('#input-country').val();
+    if (country) {
+        url += '&country=' + encodeURIComponent(country);
+    }
+    
+    location = url;
+});
+
+$('#input-country').on('change', function() {
+    $('#button-search').trigger('click');
+});
+
+$('#input-sort').on('change', function() {
+    var url = 'index.php?route=extension/cogmart/marketplace/shop&language={{ config_language }}';
+    
+    var search = $('#input-search').val();
+    if (search) {
+        url += '&search=' + encodeURIComponent(search);
+    }
+    
+    var country = $('#input-country').val();
+    if (country) {
+        url += '&country=' + encodeURIComponent(country);
+    }
+    
+    var sort = $(this).val();
+    if (sort) {
+        if (sort == 'name-desc') {
+            url += '&sort=name&order=DESC';
+        } else {
+            url += '&sort=' + sort;
+        }
+    }
+    
+    location = url;
+});
+</script>
+{{ footer }}

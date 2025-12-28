@@ -1,0 +1,47 @@
+{{ header }}
+<div id="checkout-cart" class="container">
+  <div class="row">
+    {{ column_left }}
+    <div id="content" class="col">
+      {{ content_top }}
+      
+      <h1>{{ heading_title }}</h1>
+      
+      {% if carts %}
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>{{ column_shop }}</th>
+                <th class="text-end">{{ column_action }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for cart in carts %}
+                <tr>
+                  <td>
+                    <strong>{{ cart.shop_name }}</strong><br/>
+                    <small class="text-muted">{{ cart.shop_domain }}</small><br/>
+                    <a href="{{ cart.shop_href }}" class="btn btn-sm btn-outline-primary mt-2"><i class="fa-solid fa-store"></i> View Shop</a>
+                  </td>
+                  <td class="text-end">
+                    {% if cart.checkout_url %}
+                      <a href="{{ cart.checkout_url }}" class="btn btn-success mb-2" target="_blank"><i class="fa-solid fa-shopping-cart"></i> {{ button_checkout }}</a><br/>
+                    {% endif %}
+                    <a href="{{ cart.remove }}" class="btn btn-danger btn-sm"><i class="fa-solid fa-trash"></i> {{ button_remove }}</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>{{ text_empty }}</p>
+      {% endif %}
+      
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+{{ footer }}

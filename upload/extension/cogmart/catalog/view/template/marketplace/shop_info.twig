@@ -1,0 +1,89 @@
+{{ header }}
+<div id="product-info" class="container">
+  <div class="row">
+    {{ column_left }}
+    <div id="content" class="col">
+      {{ content_top }}
+      
+      <h1>{{ name }}</h1>
+      
+      <div class="row mb-3">
+        <div class="col-md-12">
+          <p><strong>{{ text_shop_details }}</strong></p>
+          <p><i class="fa-solid fa-globe"></i> <a href="https://{{ domain }}" target="_blank">{{ domain }}</a></p>
+          {% if country %}
+            <p><i class="fa-solid fa-location-dot"></i> {{ country }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <h2>{{ text_products }}</h2>
+          <div id="shop-products">
+            <p class="text-center">
+              <i class="fa-solid fa-spinner fa-spin"></i> Loading products...
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+<script type="text/javascript">
+// This would integrate with Shopify Storefront API
+// For now, it's a placeholder showing the integration point
+$(document).ready(function() {
+    var shopDomain = '{{ domain }}';
+    var storefrontAccessToken = '{{ storefront_access_token }}';
+    
+    if (storefrontAccessToken) {
+        // In a full implementation, this would call the Shopify Storefront API
+        // fetch('https://' + shopDomain + '/api/2024-01/graphql.json', {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         'X-Shopify-Storefront-Access-Token': storefrontAccessToken
+        //     },
+        //     body: JSON.stringify({
+        //         query: `{
+        //             products(first: 12) {
+        //                 edges {
+        //                     node {
+        //                         id
+        //                         title
+        //                         handle
+        //                         images(first: 1) {
+        //                             edges {
+        //                                 node {
+        //                                     url
+        //                                 }
+        //                             }
+        //                         }
+        //                         priceRange {
+        //                             minVariantPrice {
+        //                                 amount
+        //                                 currencyCode
+        //                             }
+        //                         }
+        //                     }
+        //                 }
+        //             }
+        //         }`
+        //     })
+        // })
+        // .then(response => response.json())
+        // .then(data => {
+        //     // Render products
+        // });
+        
+        $('#shop-products').html('<p class="alert alert-info">Storefront API integration placeholder. In production, this would display products from the shop.</p>');
+    } else {
+        $('#shop-products').html('<p class="alert alert-warning">No storefront access token configured for this shop.</p>');
+    }
+});
+</script>
+{{ footer }}
