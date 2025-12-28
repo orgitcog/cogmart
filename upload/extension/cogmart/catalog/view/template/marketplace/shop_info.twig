@@ -17,13 +17,39 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row mb-3">
         <div class="col-md-12">
           <h2>{{ text_products }}</h2>
-          <div id="shop-products">
-            <p class="text-center">
-              <i class="fa-solid fa-spinner fa-spin"></i> Loading products...
-            </p>
+          
+          <!-- Product Filter/Sort Controls -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <input type="text" id="product-search" class="form-control" placeholder="Search products...">
+            </div>
+            <div class="col-md-3">
+              <select id="product-sort" class="form-select">
+                <option value="TITLE">Sort by Title</option>
+                <option value="PRICE">Sort by Price</option>
+                <option value="CREATED_AT">Sort by Newest</option>
+                <option value="BEST_SELLING">Sort by Best Selling</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button id="apply-filters" class="btn btn-primary w-100">Apply</button>
+            </div>
+          </div>
+          
+          <!-- Products Grid -->
+          <div id="shop-products" class="row">
+            <div class="col-12 text-center">
+              <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+              <p class="mt-2">Loading products...</p>
+            </div>
+          </div>
+          
+          <!-- Load More Button -->
+          <div id="load-more-container" class="text-center mt-4" style="display: none;">
+            <button id="load-more-btn" class="btn btn-outline-primary">Load More Products</button>
           </div>
         </div>
       </div>
@@ -33,57 +59,96 @@
     {{ column_right }}
   </div>
 </div>
+
+<!-- Include Storefront API JavaScript -->
+<script src="catalog/view/extension/cogmart/marketplace/javascript/storefront-api.js"></script>
+
 <script type="text/javascript">
-// This would integrate with Shopify Storefront API
-// For now, it's a placeholder showing the integration point
 $(document).ready(function() {
     var shopDomain = '{{ domain }}';
     var storefrontAccessToken = '{{ storefront_access_token }}';
+    var currentCursor = null;
+    var hasNextPage = false;
     
-    if (storefrontAccessToken) {
-        // In a full implementation, this would call the Shopify Storefront API
-        // fetch('https://' + shopDomain + '/api/2024-01/graphql.json', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'X-Shopify-Storefront-Access-Token': storefrontAccessToken
-        //     },
-        //     body: JSON.stringify({
-        //         query: `{
-        //             products(first: 12) {
-        //                 edges {
-        //                     node {
-        //                         id
-        //                         title
-        //                         handle
-        //                         images(first: 1) {
-        //                             edges {
-        //                                 node {
-        //                                     url
-        //                                 }
-        //                             }
-        //                         }
-        //                         priceRange {
-        //                             minVariantPrice {
-        //                                 amount
-        //                                 currencyCode
-        //                             }
-        //                         }
-        //                     }
-        //                 }
-        //             }
-        //         }`
-        //     })
-        // })
-        // .then(response => response.json())
-        // .then(data => {
-        //     // Render products
-        // });
+    /**
+     * Load products from Shopify Storefront API
+     */
+    function loadProducts(append) {
+        append = append || false;
         
-        $('#shop-products').html('<p class="alert alert-info">Storefront API integration placeholder. In production, this would display products from the shop.</p>');
-    } else {
-        $('#shop-products').html('<p class="alert alert-warning">No storefront access token configured for this shop.</p>');
+        if (!storefrontAccessToken) {
+            $('#shop-products').html('<div class="col-12"><div class="alert alert-warning">No storefront access token configured for this shop. Please contact the shop administrator.</div></div>');
+            return;
+        }
+        
+        var searchQuery = $('#product-search').val() || '';
+        var sortKey = $('#product-sort').val() || 'TITLE';
+        
+        if (!append) {
+            $('#shop-products').html('<div class="col-12 text-center"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><p class="mt-2">Loading products...</p></div>');
+        }
+        
+        CogMartStorefront.fetchProducts(shopDomain, storefrontAccessToken, {
+            first: 20,
+            query: searchQuery,
+            sortKey: sortKey
+        })
+        .then(function(products) {
+            if (products.edges.length === 0) {
+                if (!append) {
+                    $('#shop-products').html('<div class="col-12"><div class="alert alert-info">No products found.</div></div>');
+                }
+                $('#load-more-container').hide();
+                return;
+            }
+            
+            var html = '';
+            products.edges.forEach(function(product) {
+                html += CogMartStorefront.renderProductCard(product, shopDomain);
+            });
+            
+            if (append) {
+                $('#shop-products').append(html);
+            } else {
+                $('#shop-products').html(html);
+            }
+            
+            // Handle pagination
+            hasNextPage = products.pageInfo.hasNextPage;
+            if (hasNextPage && products.edges.length > 0) {
+                currentCursor = products.edges[products.edges.length - 1].cursor;
+                $('#load-more-container').show();
+            } else {
+                $('#load-more-container').hide();
+            }
+        })
+        .catch(function(error) {
+            console.error('Error loading products:', error);
+            if (!append) {
+                $('#shop-products').html('<div class="col-12"><div class="alert alert-danger">Error loading products: ' + error.message + '</div></div>');
+            }
+        });
     }
+    
+    // Initial load
+    loadProducts();
+    
+    // Apply filters button
+    $('#apply-filters').on('click', function() {
+        loadProducts(false);
+    });
+    
+    // Search on Enter key
+    $('#product-search').on('keypress', function(e) {
+        if (e.which === 13) {
+            loadProducts(false);
+        }
+    });
+    
+    // Load more button
+    $('#load-more-btn').on('click', function() {
+        loadProducts(true);
+    });
 });
 </script>
 {{ footer }}
