@@ -14,10 +14,44 @@ This extension adds Shopify-like marketplace functionality to OpenCart, allowing
 ### Buyer Features (from shopify-marketplaces-buyer-app)
 - **Shop Discovery**: Browse all participating shops in the marketplace
 - **Shop Filtering**: Filter shops by country and search by name
-- **Shop Storefronts**: View individual shop pages with their products
+- **Shop Storefronts**: View individual shop pages with live product displays
+- **Product Display**: Real-time product fetching from Shopify Storefront API
+- **Product Search**: Search products across all marketplace shops
+- **Advanced Filtering**: Filter by country, price range, availability, and sort options
 - **Multi-Shop Cart**: Maintain separate carts for each shop
 - **Cart Management**: Add, view, and remove items from marketplace carts
-- **GraphQL API**: Frontend integration for shop data retrieval
+- **Enhanced UI**: Modern Bootstrap 5 interface with responsive design
+
+### New Features (v2.0)
+
+#### ✅ Shopify Storefront API Integration
+- **Real-time product fetching** from participating Shopify stores
+- **Product grid display** with images, prices, and availability
+- **Product search and filtering** within individual shops
+- **Multiple sort options** (title, price, newest, best selling)
+- **Pagination** with "Load More" functionality
+- **Currency formatting** with international support
+- **Direct product links** to shop storefronts
+
+#### ✅ Global Product Search
+- **Cross-shop search** - Search products across all marketplace shops simultaneously
+- **Multi-criteria filtering**:
+  - Text search (product name, description, tags)
+  - Country filter (filter shops by location)
+  - Price range (min/max price filters)
+  - Availability filter (in stock only)
+  - Sort options (title, price, newest)
+- **Results aggregation** - Unified display of products from multiple shops
+- **Shop attribution** - Each product shows which shop it's from
+- **Search statistics** - Shows count of products found from how many shops
+
+#### ✅ Enhanced Cart Management
+- **Improved cart UI** - Card-based layout for better organization
+- **Cart metadata** - Display shop names, domains, and cart IDs
+- **API endpoint** - Programmatic cart creation and updates
+- **CORS support** - Cross-origin requests for frontend integration
+- **Cart persistence** - Maintains carts across sessions
+- **Checkout integration** - Direct links to shop checkouts
 
 ## Installation
 
@@ -95,24 +129,48 @@ This extension adds Shopify-like marketplace functionality to OpenCart, allowing
    - Click "Delete" button
    - Confirm deletion
 
-### Buyer: Browsing Marketplace
+### Buyer: Using the Marketplace
 
-1. **Shop Discovery**
+1. **Browse Shops**
    - Navigate to: `/index.php?route=extension/cogmart/marketplace/shop`
    - Browse all participating marketplace shops
-   - Filter by country or search by name
+   - Filter by country or search by shop name
    - Sort by name (A-Z or Z-A)
+   - Click on any shop to view its products
 
-2. **View Shop Details**
-   - Click on any shop to view its storefront
-   - See shop name, domain, and country
-   - View products from the shop (requires storefront access token)
+2. **View Shop Products**
+   - Click on any shop to see its storefront
+   - Products are loaded in real-time from the shop's Shopify store
+   - Use the search box to filter products within the shop
+   - Change sort order (title, price, newest, best selling)
+   - Click "Apply" to refresh the product list
+   - Click "Load More" to fetch additional products
+   - Click on product images or "View Product" to visit the product page on the shop's storefront
 
-3. **Multi-Shop Cart**
+3. **Search Products Globally**
+   - Click "Search Products" button on the shop listing page
+   - Or navigate to: `/index.php?route=extension/cogmart/marketplace/search`
+   - Enter search terms to find products across all shops
+   - Use filters to refine results:
+     - Country: Filter shops by location
+     - Price Range: Set minimum and maximum price
+     - Availability: Show only in-stock items
+     - Sort: Order by title, price, or newest
+   - View search statistics showing products found from multiple shops
+   - Each product card shows which shop it's from
+   - Click "View Product" to visit the product on the shop's storefront
+
+4. **Multi-Shop Cart**
    - Add products from different shops to your cart
-   - Each shop maintains its own cart
+   - Each shop maintains its own separate cart
    - View all carts: `/index.php?route=extension/cogmart/marketplace/cart`
-   - Proceed to checkout for each shop separately
+   - Cart page shows:
+     - Cart details for each shop
+     - Shop names and domains
+     - Links to continue shopping in each shop
+     - Checkout buttons for each shop
+   - Click "Go to Checkout" to proceed to the shop's checkout
+   - Remove carts using the "Remove Cart" button (with confirmation)
 
 ## API Endpoints
 
@@ -161,7 +219,28 @@ POST /index.php?route=extension/cogmart/marketplace/shop.api
 
 ### Cart API
 
-**Add to Cart**
+**Create/Update Cart (API)**
+```
+POST /index.php?route=extension/cogmart/marketplace/cart.api
+Content-Type: application/json
+
+{
+  "marketplace_shop_id": 1,
+  "cart_id": "gid://shopify/Cart/abc123",
+  "checkout_url": "https://shop.myshopify.com/checkouts/abc123"
+}
+
+Response:
+{
+  "success": true,
+  "action": "created" | "updated",
+  "marketplace_cart_id": 123,
+  "message": "Success: You have added item to your marketplace cart!",
+  "total_carts": 2
+}
+```
+
+**Add to Cart (Legacy)**
 ```
 POST /index.php?route=extension/cogmart/marketplace/cart.add
 {
@@ -174,16 +253,60 @@ POST /index.php?route=extension/cogmart/marketplace/cart.add
 **Get Cart Count**
 ```
 GET /index.php?route=extension/cogmart/marketplace/cart.count
+
+Response:
+{
+  "total": 2
+}
 ```
 
-## Integration with Storefront
+## Integration with Shopify Storefront
 
-The extension provides the foundation for marketplace functionality. To fully integrate with Shopify or other storefronts:
+The extension now includes **full Shopify Storefront API integration**. See [STOREFRONT_API.md](STOREFRONT_API.md) for complete documentation.
 
-1. **Storefront Access Token**: Each shop needs a valid storefront access token
-2. **Product Display**: Integrate Shopify Storefront API to fetch and display products
-3. **Cart Integration**: Use the Storefront API to create and manage carts
-4. **Checkout**: Direct buyers to individual shop checkouts using the stored checkout URLs
+### Quick Start
+
+1. **Configure Shop**: Add shop with valid Storefront Access Token in admin panel
+2. **Automatic Product Display**: Products automatically load when viewing shop pages
+3. **Search Integration**: Products appear in global search results
+4. **Cart Creation**: Use the JavaScript API to create carts and add products
+
+### JavaScript API
+
+The extension includes `CogMartStorefront` JavaScript object for easy integration:
+
+```javascript
+// Fetch products
+CogMartStorefront.fetchProducts('shop.myshopify.com', 'token', {
+    first: 20,
+    query: 'shoes',
+    sortKey: 'PRICE'
+}).then(products => {
+    console.log('Products:', products);
+});
+
+// Create cart
+CogMartStorefront.createCart('shop.myshopify.com', 'token', [
+    { merchandiseId: 'gid://shopify/ProductVariant/123', quantity: 1 }
+]).then(cart => {
+    console.log('Cart:', cart.checkoutUrl);
+});
+```
+
+### Obtaining Storefront Access Tokens
+
+For shop owners using Shopify:
+
+1. Log in to Shopify admin
+2. Go to Settings > Apps and sales channels
+3. Click "Develop apps"
+4. Create new app with Storefront API access
+5. Generate Storefront Access Token
+6. Provide token to marketplace administrator
+7. Required scopes:
+   - `unauthenticated_read_product_listings`
+   - `unauthenticated_read_product_inventory`
+   - `unauthenticated_read_product_tags`
 
 ## File Structure
 
@@ -191,18 +314,36 @@ The extension provides the foundation for marketplace functionality. To fully in
 extension/cogmart/
 ├── install.json                          # Extension manifest
 ├── install.sql                           # Database schema
+├── README.md                             # This file
+├── STOREFRONT_API.md                     # Storefront API integration guide
+├── FEATURE_MAPPING.md                    # Feature mapping from Shopify Kit
+├── IMPLEMENTATION_SUMMARY.md             # Implementation summary
 ├── admin/
 │   ├── controller/module/marketplace.php # Admin controller
 │   ├── model/module/marketplace.php      # Admin model
-│   └── language/en-gb/module/marketplace.php # Admin language
+│   ├── language/en-gb/module/marketplace.php # Admin language
+│   └── view/template/module/             # Admin templates
+│       ├── marketplace.twig              # Module settings
+│       ├── marketplace_shop_form.twig    # Shop add/edit form
+│       └── marketplace_shop_list.twig    # Shop list
 └── catalog/
     ├── controller/marketplace/
-    │   ├── shop.php                      # Shop browsing controller
-    │   └── cart.php                      # Cart management controller
+    │   ├── shop.php                      # Shop browsing & API controller
+    │   ├── cart.php                      # Cart management controller
+    │   └── search.php                    # Global product search controller
     ├── model/marketplace/shop.php        # Catalog model
-    └── language/en-gb/marketplace/
-        ├── shop.php                      # Shop language
-        └── cart.php                      # Cart language
+    ├── language/en-gb/marketplace/
+    │   ├── shop.php                      # Shop language strings
+    │   ├── cart.php                      # Cart language strings
+    │   └── search.php                    # Search language strings
+    └── view/template/marketplace/
+        ├── shop_list.twig                # Shop listing page
+        ├── shop_info.twig                # Individual shop page with products
+        ├── cart.twig                     # Multi-shop cart page
+        └── search.twig                   # Global search page
+
+upload/catalog/view/javascript/
+└── cogmart-storefront-api.js             # Shopify Storefront API client (installed separately)
 ```
 
 ## Architecture
@@ -277,17 +418,38 @@ The API endpoint in `catalog/controller/marketplace/shop.php` can be extended wi
 - Check shop status is set to "Enabled"
 - Ensure proper Content-Type headers in API requests
 
-## Future Enhancements
+## What's New in v2.0
 
-Potential improvements:
-- Full GraphQL parser implementation
-- Real-time product sync from Shopify
-- Advanced filtering (price ranges, categories)
-- Shop analytics and reporting
-- Customer reviews and ratings
-- Shop subscription/commission tracking
-- Multi-language support for shop descriptions
-- Image uploads for shop branding
+### ✅ Completed Features
+- ✅ **Full Shopify Storefront API integration** - Real-time product display
+- ✅ **Product search and filtering** - Within individual shops
+- ✅ **Global product search** - Search across all marketplace shops
+- ✅ **Advanced filtering** - Price ranges, availability, country filters
+- ✅ **Enhanced cart management** - Improved UI with cart details
+- ✅ **JavaScript API client** - Easy integration with `CogMartStorefront` object
+- ✅ **Multiple sort options** - Sort by title, price, date, best selling
+- ✅ **Pagination** - Load more products on demand
+- ✅ **Currency formatting** - International currency support
+- ✅ **Responsive design** - Modern Bootstrap 5 interface
+
+### Roadmap
+
+Potential future improvements:
+- [ ] Full GraphQL parser implementation
+- [ ] Product detail pages with variant selection
+- [ ] Customer reviews and ratings system
+- [ ] Shop analytics dashboard (admin)
+- [ ] Commission tracking and payouts
+- [ ] Featured shops functionality
+- [ ] Shop categories and tags
+- [ ] Wishlist functionality
+- [ ] Product comparison
+- [ ] Multi-language support for shop descriptions
+- [ ] Shop branding (logos, banners)
+- [ ] Email notifications for orders
+- [ ] Advanced reporting and analytics
+- [ ] Mobile app integration
+- [ ] SEO optimization for product pages
 
 ## License
 

@@ -1,0 +1,301 @@
+{{ header }}
+<div id="product-search" class="container">
+  <div class="row">
+    {{ column_left }}
+    <div id="content" class="col">
+      {{ content_top }}
+      
+      <h1>{{ heading_title }}</h1>
+      <p class="lead">{{ text_search }}</p>
+      
+      <!-- Search and Filter Form -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fa-solid fa-filter"></i> Search Filters</h5>
+        </div>
+        <div class="card-body">
+          <form id="search-form">
+            <div class="row g-3">
+              <!-- Search Query -->
+              <div class="col-md-12">
+                <label for="search-query" class="form-label">{{ entry_search }}</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="search-query" name="q" value="{{ search_query }}" placeholder="Enter product name, description, tags...">
+                  <button class="btn btn-primary" type="submit" id="search-btn">
+                    <i class="fa-solid fa-search"></i> {{ button_search }}
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Country Filter -->
+              <div class="col-md-3">
+                <label for="filter-country" class="form-label">{{ entry_country }}</label>
+                <select class="form-select" id="filter-country" name="country">
+                  <option value="">{{ text_all_countries }}</option>
+                  {% for country in countries %}
+                    <option value="{{ country }}" {% if filter_country == country %}selected{% endif %}>{{ country }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              
+              <!-- Min Price -->
+              <div class="col-md-2">
+                <label for="filter-min-price" class="form-label">{{ entry_min_price }}</label>
+                <input type="number" class="form-control" id="filter-min-price" name="min_price" value="{{ filter_min_price }}" placeholder="0" step="0.01" min="0">
+              </div>
+              
+              <!-- Max Price -->
+              <div class="col-md-2">
+                <label for="filter-max-price" class="form-label">{{ entry_max_price }}</label>
+                <input type="number" class="form-control" id="filter-max-price" name="max_price" value="{{ filter_max_price }}" placeholder="Any" step="0.01" min="0">
+              </div>
+              
+              <!-- Availability -->
+              <div class="col-md-3">
+                <label for="filter-available" class="form-label">{{ entry_availability }}</label>
+                <select class="form-select" id="filter-available" name="available">
+                  <option value="">{{ text_all_availability }}</option>
+                  <option value="1" {% if filter_available == '1' %}selected{% endif %}>{{ text_in_stock_only }}</option>
+                </select>
+              </div>
+              
+              <!-- Sort -->
+              <div class="col-md-2">
+                <label for="filter-sort" class="form-label">{{ entry_sort }}</label>
+                <select class="form-select" id="filter-sort" name="sort">
+                  <option value="TITLE" {% if sort == 'TITLE' %}selected{% endif %}>{{ text_sort_title }}</option>
+                  <option value="PRICE" {% if sort == 'PRICE' %}selected{% endif %}>{{ text_sort_price }}</option>
+                  <option value="CREATED_AT" {% if sort == 'CREATED_AT' %}selected{% endif %}>{{ text_sort_newest }}</option>
+                </select>
+              </div>
+              
+              <!-- Reset Button -->
+              <div class="col-md-12">
+                <button type="button" class="btn btn-outline-secondary" id="reset-btn">
+                  <i class="fa-solid fa-redo"></i> {{ button_reset }}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Search Results Summary -->
+      <div id="search-summary" class="mb-3" style="display: none;">
+        <div class="alert alert-info">
+          <i class="fa-solid fa-info-circle"></i> <span id="summary-text"></span>
+        </div>
+      </div>
+      
+      <!-- Loading State -->
+      <div id="search-loading" style="display: none;">
+        <div class="text-center py-5">
+          <i class="fa-solid fa-spinner fa-spin fa-3x text-primary"></i>
+          <p class="mt-3 text-muted">{{ text_loading }}</p>
+        </div>
+      </div>
+      
+      <!-- Search Results -->
+      <div id="search-results" class="row">
+        <div class="col-12">
+          <div class="alert alert-secondary text-center">
+            <i class="fa-solid fa-search fa-2x mb-2"></i>
+            <p class="mb-0">Enter a search term and click "Search" to find products across all marketplace shops.</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- No Results -->
+      <div id="no-results" class="text-center py-5" style="display: none;">
+        <i class="fa-solid fa-inbox fa-3x text-muted mb-3"></i>
+        <h4>{{ text_no_results }}</h4>
+        <p class="text-muted">Try adjusting your search criteria or filters.</p>
+      </div>
+      
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+
+<!-- Include Storefront API JavaScript -->
+<script src="catalog/view/javascript/cogmart-storefront-api.js?v=2.0.0"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+    var shops = {{ shops|json_encode|raw }};
+    var allProducts = [];
+    
+    /**
+     * Search products across all shops
+     */
+    function searchProducts() {
+        var searchQuery = $('#search-query').val().trim();
+        var filterCountry = $('#filter-country').val();
+        var minPrice = parseFloat($('#filter-min-price').val()) || 0;
+        var maxPrice = parseFloat($('#filter-max-price').val()) || Infinity;
+        var filterAvailable = $('#filter-available').val();
+        var sortBy = $('#filter-sort').val();
+        
+        if (!searchQuery) {
+            $('#search-results').html('<div class="col-12"><div class="alert alert-warning"><i class="fa-solid fa-exclamation-triangle"></i> Please enter a search term.</div></div>');
+            return;
+        }
+        
+        // Show loading
+        $('#search-loading').show();
+        $('#search-results').empty();
+        $('#no-results').hide();
+        $('#search-summary').hide();
+        
+        allProducts = [];
+        var searchPromises = [];
+        var filteredShops = shops;
+        
+        // Filter shops by country
+        if (filterCountry) {
+            filteredShops = shops.filter(function(shop) {
+                return shop.country === filterCountry;
+            });
+        }
+        
+        // Search each shop
+        filteredShops.forEach(function(shop) {
+            var promise = CogMartStorefront.fetchProducts(shop.domain, shop.storefront_access_token, {
+                first: 20,
+                query: searchQuery,
+                sortKey: sortBy
+            })
+            .then(function(products) {
+                products.edges.forEach(function(productEdge) {
+                    var product = productEdge.node;
+                    var price = parseFloat(product.priceRange.minVariantPrice.amount);
+                    
+                    // Apply filters
+                    if (price >= minPrice && price <= maxPrice) {
+                        if (!filterAvailable || product.availableForSale) {
+                            product.shop = shop;
+                            allProducts.push(product);
+                        }
+                    }
+                });
+            })
+            .catch(function(error) {
+                console.error('Error searching shop ' + shop.name + ':', error);
+            });
+            
+            searchPromises.push(promise);
+        });
+        
+        // Wait for all searches to complete
+        Promise.all(searchPromises).then(function() {
+            displayResults();
+        });
+    }
+    
+    /**
+     * Display search results
+     */
+    function displayResults() {
+        $('#search-loading').hide();
+        
+        if (allProducts.length === 0) {
+            $('#no-results').show();
+            return;
+        }
+        
+        // Sort products if needed
+        var sortBy = $('#filter-sort').val();
+        if (sortBy === 'PRICE') {
+            allProducts.sort(function(a, b) {
+                return parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount);
+            });
+        } else if (sortBy === 'CREATED_AT') {
+            allProducts.sort(function(a, b) {
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+        }
+        
+        // Show summary
+        var uniqueShops = {};
+        allProducts.forEach(function(product) {
+            uniqueShops[product.shop.marketplace_shop_id] = true;
+        });
+        var shopCount = Object.keys(uniqueShops).length;
+        
+        $('#summary-text').html('Found <strong>' + allProducts.length + '</strong> product(s) from <strong>' + shopCount + '</strong> shop(s)');
+        $('#search-summary').show();
+        
+        // Render products
+        var html = '';
+        allProducts.forEach(function(product) {
+            html += renderSearchResult(product);
+        });
+        
+        $('#search-results').html(html);
+    }
+    
+    /**
+     * Render a single search result
+     */
+    function renderSearchResult(product) {
+        var image = product.images.edges.length > 0 ? product.images.edges[0].node : null;
+        var minPrice = product.priceRange.minVariantPrice;
+        var priceDisplay = CogMartStorefront.formatPrice(minPrice.amount, minPrice.currencyCode);
+        var availabilityClass = product.availableForSale ? 'text-success' : 'text-danger';
+        var availabilityText = product.availableForSale ? 'In Stock' : 'Out of Stock';
+        
+        return `
+            <div class="col-md-3 col-sm-6 mb-4">
+                <div class="card h-100 product-card">
+                    ${image ? `
+                        <img src="${image.url}" class="card-img-top" alt="${image.altText || product.title}" style="height: 200px; object-fit: cover;">
+                    ` : `
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fa-solid fa-image fa-3x text-muted"></i>
+                        </div>
+                    `}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">${product.title}</h5>
+                        <p class="card-text flex-grow-1">${product.description ? (product.description.substring(0, 100) + (product.description.length > 100 ? '...' : '')) : ''}</p>
+                        <div class="mt-auto">
+                            <p class="mb-2"><strong>${priceDisplay}</strong></p>
+                            <p class="mb-2 ${availabilityClass}"><small>${availabilityText}</small></p>
+                            <p class="mb-2 text-muted"><small><i class="fa-solid fa-store"></i> ${product.shop.name}</small></p>
+                            <a href="https://${product.shop.domain}/products/${product.handle}" target="_blank" class="btn btn-primary btn-sm w-100">
+                                {{ button_view }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Search on form submit
+    $('#search-form').on('submit', function(e) {
+        e.preventDefault();
+        searchProducts();
+    });
+    
+    // Search on button click
+    $('#search-btn').on('click', function(e) {
+        e.preventDefault();
+        searchProducts();
+    });
+    
+    // Reset filters
+    $('#reset-btn').on('click', function() {
+        $('#search-form')[0].reset();
+        $('#search-results').html('<div class="col-12"><div class="alert alert-secondary text-center"><i class="fa-solid fa-search fa-2x mb-2"></i><p class="mb-0">Enter a search term and click "Search" to find products across all marketplace shops.</p></div></div>');
+        $('#search-summary').hide();
+        $('#no-results').hide();
+    });
+    
+    // Auto-search if query parameter exists
+    {% if search_query %}
+        searchProducts();
+    {% endif %}
+});
+</script>
+{{ footer }}
